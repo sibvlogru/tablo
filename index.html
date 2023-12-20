@@ -29,13 +29,23 @@
           <li></li>
         </ul>
 
-        <audio controls v-show="false" ref="musicTick">
-          <source src="" type="audio/mp3">
-          Unsupported music
+        <audio controls v-show="false" ref="musicApp">
+          <source src="/media/app.mp3" type="audio/mp3">
         </audio>
-        <audio controls v-show="false" ref="musicEnd">
-          <source :src="musicEnd" type="audio/mp3">
-          Unsupported music
+        <audio controls v-show="false" ref="musicGong">
+          <source src="/media/gong.mp3" type="audio/mp3">
+        </audio>
+        <audio controls v-show="false" ref="musicSig1">
+          <source src="/media/sig1.mp3" type="audio/mp3">
+        </audio>
+        <audio controls v-show="false" ref="musicSig2">
+          <source src="/media/sig2.mp3" type="audio/mp3">
+        </audio>
+        <audio controls v-show="false" ref="musicSig3">
+          <source src="/media/sig3.mp3" type="audio/mp3">
+        </audio>
+        <audio controls v-show="false" ref="musicTick">
+          <source src="/media/tick.mp3" type="audio/mp3">
         </audio>
 
         <v-card width="100%" height="25%" flat class="transparent">
@@ -43,9 +53,15 @@
 
           <v-card v-if="!isTimeShow" @click="changeGameName()" height="100%"
             class="transparent d-flex align-center justify-center rounded-xl" flat>
-            <span class="font-weight-black text-h1 white--text">
-              {{info.gameName}}
-            </span>
+            <v-tooltip top>
+              <template v-slot:activator="{ on, attrs }">
+                <span class="font-weight-black text-h1 white--text" v-bind="attrs" v-on="on">
+                  {{info.gameName}}
+                </span>
+
+              </template>
+              Click to change game name!
+            </v-tooltip>
           </v-card>
 
           <v-expand-transition>
@@ -61,17 +77,14 @@
                       :buffer-value="timeProgress" height="120px" stream>
                       <div v-if="time === 60" class="d-flex align-center">
                         <v-icon size="80" class="pr-8" color="white">mdi-clock-remove-outline</v-icon><span
-                          class="text-h1 font-weight-black yellow--text">TIMEOUT</span>
+                          class="text-h1 font-weight-black yellow--text">{{texts.timeisover}}</span>
                       </div>
                     </v-progress-linear>
 
                   </v-col>
-
                   <v-col cols="1" class="d-flex align-center justify-center">
                     <v-btn v-show="time === 60" icon large @click="roundDone()"><v-icon>mdi-close</v-icon></v-btn>
                   </v-col>
-
-
                 </v-row>
               </v-container>
             </v-card>
@@ -84,16 +97,32 @@
             <v-row align="center" justify="center">
               <v-col v-for="(team, index) in info.teams" :key="index">
                 <v-card class="rounded-xl">
-                  <v-card-title @click="changeName(index)"
-                    :class="`d-flex justify-center text-h4 ${colors[index]||'grey'} lighten-2`">{{
-                    team.name }}</v-card-title>
-                  <v-card class="d-flex align-center justify-space-around">
-                    <v-btn icon large><v-icon color="grey lighten-2"
-                        @click="changeCount(index,-1)">mdi-minus</v-icon></v-btn>
-                    <span class="font-weight-black text"> {{team.count}}</span>
-                    <v-btn icon large><v-icon color="grey lighten-2"
-                        @click="changeCount(index,1)">mdi-plus</v-icon></v-btn>
-                  </v-card>
+
+
+                  <v-tooltip top>
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-card-title @click="changeName(index)"
+                        :class="`d-flex justify-center text-h4 ${colors[index]||'grey'} lighten-2`" v-bind="attrs"
+                        v-on="on">{{
+                        team.name }}</v-card-title>
+                    </template>
+                    Click to change team name
+                  </v-tooltip>
+
+                  <v-tooltip top>
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-card class="d-flex align-center justify-space-around" v-bind="attrs" v-on="on">
+                        <v-btn icon large><v-icon color="grey lighten-2"
+                            @click="changeCount(index,-1)">mdi-minus</v-icon></v-btn>
+                        <span class="font-weight-black text"> {{team.count}}</span>
+                        <v-btn icon large><v-icon color="grey lighten-2"
+                            @click="changeCount(index,1)">mdi-plus</v-icon></v-btn>
+                      </v-card>
+                    </template>
+                    Click - or + to change count
+                  </v-tooltip>
+
+
                 </v-card>
               </v-col>
             </v-row>
@@ -105,10 +134,17 @@
           <v-container fluid fill-height>
             <v-row align='center' justify='center'>
               <v-col cols='2' class="d-flex justify-center">
-                <v-btn @click="startQuestion()" width="80%" height="90%" text
-                  class="blue darken-1 rounded-xl elevation-0">
-                  <v-icon size="128" color="blue">mdi-play</v-icon>
-                </v-btn>
+
+                <v-tooltip top>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn @click="isButtonPlay ? startQuestion() : stopTimer()" width="80%" height="90%" text
+                      v-bind="attrs" v-on="on" class="blue darken-1 rounded-xl elevation-0">
+                      <v-icon size="128" color="blue">{{ isButtonPlay ? 'mdi-play' : 'mdi-stop'}}</v-icon>
+                    </v-btn>
+                  </template>
+                  Click to start next round
+                </v-tooltip>
+
               </v-col>
               <v-col cols='8' class="d-flex justify-center">
                 <span class="font-weight-black text-h1">
@@ -124,7 +160,6 @@
               </v-col>
             </v-row>
           </v-container>
-
         </v-card>
 
 
@@ -133,20 +168,32 @@
   </div>
 
   <script>
-    const INTERVAL = 1000;
+    const INTERVAL = 100;
+    const TIMES = {
+      START: 0,
+      MIDDLE: 30,
+      PRE_FINISH: 50,
+      FINISH: 60
+    }
+
+    const texts = {
+      timeisover: 'TIME IS OVER'
+    }
 
     new Vue({
       el: "#app",
       vuetify: new Vuetify(),
       data() {
         return {
+          texts,
+          TIMES,
           info: {
             teams: [],
             gameName: 'The Game'
           },
           defaultTeamsCount: 5,
           isPanelHidden: true,
-          time: 0,
+          time: TIMES.START,
           timeCounter: null,
           round: 0,
           musicTick: '',
@@ -157,22 +204,25 @@
         };
       },
       computed: {
+        isButtonPlay() {
+          return !this.timeCounter;
+        },
         timeProgress() {
-          return this.time / 60 * 100
+          return this.time / TIMES.FINISH * 100
         },
         timeText() {
-          return 60 - this.time
+          return TIMES.FINISH - this.time
         },
         progressColor() {
-          if (this.time < 30) return 'green';
-          if (this.time < 50) return 'orange';
-          if (this.time <= 60) return 'red';
+          if (this.time < TIMES.MIDDLE) return 'green';
+          if (this.time < TIMES.PRE_FINISH) return 'orange';
+          if (this.time <= TIMES.FINISH) return 'red';
         }
       },
       mounted() {
-        const savedTeams = this.getObjectFromCookie();
-        if (savedTeams) {
-          this.info.teams = savedTeams
+        const savedInfo = this.getObjectFromCookie();
+        if (savedInfo) {
+          this.info = savedInfo
         } else {
           this.addTeam()
           this.addTeam()
@@ -183,20 +233,39 @@
       },
       watch: {
         time(newTime) {
-          if (newTime === 60) {
-            this.playAudioEnd();
+          if (newTime === TIMES.FINISH) {
             clearInterval(this.timeCounter);
             this.timeCounter = null;
           }
+          if (newTime === TIMES.PRE_FINISH) {
+            this.playSound('musicSig2');
+          } else if (newTime === TIMES.FINISH) {
+            this.playSound('musicSig3');
+          } else if (newTime !== TIMES.START) {
+            this.playSound('musicTick');
+          }
         },
-        teams(newTeams) {
-          this.saveObjectToCookie(newTeams)
-        }
+        info: {
+          handler(newVal) {
+            this.saveObjectToCookie(newVal)
+          },
+          deep: true,
+        },
       },
       methods: {
+        stopTimer() {
+          this.time = TIMES.FINISH - 1;
+        },
+        playSound(name) {
+          const audioElement = this.$refs[name];
+          audioElement.pause();
+          audioElement.currentTime = 0;
+          audioElement.play();
+        },
         roundDone() {
           this.isTimeShow = false;
-          this.time = 0;
+          this.time = TIMES.START;
+          this.playSound('musicGong')
         },
         toggleFullscreen() {
           const isInFullscreen = document.fullscreenElement !== null;
@@ -246,6 +315,7 @@
           if (count === -1 && currentTeam.count === 0) return;
           const newCount = Number.isInteger(currentTeam.count) ? currentTeam.count + count : 0;
           this.info.teams.splice(index, 1, { ...this.info.teams[index], count: newCount })
+          if (count > 0) this.playSound('musicApp');
         },
         saveObjectToCookie(obj) {
           const jsonString = JSON.stringify(obj);
@@ -256,33 +326,19 @@
             /(?:(?:^|.*;\s*)teams\s*=\s*([^;]*).*$)|^.*$/,
             '$1'
           );
-
           if (cookieValue) {
             const decodedString = decodeURIComponent(cookieValue);
             return JSON.parse(decodedString);
           }
-
           return null;
-        },
-        playAudioTick() {
-          const audioElement = this.$refs.musicTick;
-          audioElement.pause();
-          audioElement.currentTime = 0;
-          audioElement.play();
-        },
-        playAudioEnd() {
-          const audioElement = this.$refs.musicEnd;
-          audioElement.pause();
-          audioElement.currentTime = 0;
-          audioElement.play();
         },
         startQuestion() {
           this.round++;
           this.isTimeShow = true;
-          this.time = 0;
+          this.time = TIMES.START;
+          this.playSound('musicSig1')
           this.timeCounter = setInterval(() => {
             this.time++;
-            this.playAudioTick()
           }, INTERVAL);
         },
         addTeam() {
