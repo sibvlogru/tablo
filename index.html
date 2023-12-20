@@ -176,6 +176,8 @@
       FINISH: 60
     }
 
+    IS_TICK_SOUND = fasle;
+
     const texts = {
       timeisover: 'TIME IS OVER'
     }
@@ -241,7 +243,7 @@
             this.playSound('musicSig2');
           } else if (newTime === TIMES.FINISH) {
             this.playSound('musicSig3');
-          } else if (newTime !== TIMES.START) {
+          } else if (newTime !== TIMES.START && IS_TICK_SOUND) {
             this.playSound('musicTick');
           }
         },
