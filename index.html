@@ -133,10 +133,7 @@
   </div>
 
   <script>
-    const QUESTIONS_MODE = {
-      TEXT: "text",
-      TABLE: "table",
-    };
+    const INTERVAL = 1000;
 
     new Vue({
       el: "#app",
@@ -286,7 +283,7 @@
           this.timeCounter = setInterval(() => {
             this.time++;
             this.playAudioTick()
-          }, 100)
+          }, INTERVAL);
         },
         addTeam() {
           this.info.teams.push({ name: `New team ${this.info.teams.length + 1}`, count: 0 });
