@@ -65,7 +65,7 @@
           </v-card>
 
           <v-expand-transition>
-            <v-card v-show="isTimeShow" height="100%" class="transparent blue darken-1 rounded-xl">
+            <v-card v-show="isTimeShow" height="100%" class="transparent blue darken-2 rounded-xl">
               <v-container fluid fill-height pa-0>
                 <v-row align='center' justify='center' class="pa-0">
                   <v-col cols="2" class="d-flex align-center justify-center pa-0">
@@ -73,7 +73,7 @@
                   </v-col>
                   <v-col cols="9">
 
-                    <v-progress-linear v-model="timeProgress" class="white rounded-xl" :color="progressColor" rounded
+                    <v-progress-linear v-model="timeProgress" class="white rounded-xl" :color="progressColor" rounded-xl
                       :buffer-value="timeProgress" height="120px" stream>
                       <div v-if="time === 60" class="d-flex align-center">
                         <v-icon size="80" class="pr-8" color="white">mdi-clock-remove-outline</v-icon><span
@@ -146,11 +146,14 @@
                 </v-tooltip>
 
               </v-col>
-              <v-col cols='8' class="d-flex justify-center">
-                <span class="font-weight-black text-h1">
-                  <span v-if="round>0"><span class="white--text pr-8">ROUND</span><span class="yellow--text">{{ round
-                      }}</span></span>
-                </span>
+              <v-col cols='8' class="d-flex justify-center align-center font-weight-black text-h1">
+
+                <span v-if="round>0"><span class="white--text pr-8">ROUND</span><v-avatar size="140"
+                    color="blue darken-2">
+                    <span class="yellow--text">{{ round
+                      }}</span>
+                  </v-avatar></span>
+
               </v-col>
               <v-col cols='2' class="d-flex justify-center">
                 <v-btn @click="toggleFullscreen()" width="80%" height="90%" text
@@ -502,6 +505,14 @@
         border-radius: 50%;
       }
 
+    }
+
+    .megatron {
+      background-image: linear-gradient(to top, #c3c3c3, #eaeaea 15%, #ffffff 35%, #ffffff);
+    }
+
+    .reddest {
+      background-image: linear-gradient(25deg, #d64c7f, #ee4758 50%);
     }
   </style>
 </body>
