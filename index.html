@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The game</title>
+  <!-- Add links to Vue.js 2 and Vuetify -->
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.5.10/dist/vuetify.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.5.10/dist/vuetify.js"></script>
+</head>
+
+<body>
+  <div id="app">
+    <v-app>
+      <v-card id="screen" width="100%" height="100%" flat class="blue pa-8 area">
+        <ul class="circles">
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+        </ul>
+
+        <audio controls v-show="false" ref="musicTick">
+          <source src="" type="audio/mp3">
+          Unsupported music
+        </audio>
+        <audio controls v-show="false" ref="musicEnd">
+          <source :src="musicEnd" type="audio/mp3">
+          Unsupported music
+        </audio>
+
+        <v-card width="100%" height="25%" flat class="transparent">
+
+
+          <v-card v-if="!isTimeShow" @click="changeGameName()" height="100%"
+            class="transparent d-flex align-center justify-center rounded-xl" flat>
+            <span class="font-weight-black text-h1 white--text">
+              {{info.gameName}}
+            </span>
+          </v-card>
+
+          <v-expand-transition>
+            <v-card v-show="isTimeShow" height="100%" class="transparent blue darken-1 rounded-xl">
+              <v-container fluid fill-height pa-0>
+                <v-row align='center' justify='center' class="pa-0">
+                  <v-col cols="2" class="d-flex align-center justify-center pa-0">
+                    <span class="font-weight-black text white--text">{{timeText}}</span>
+                  </v-col>
+                  <v-col cols="9">
+
+                    <v-progress-linear v-model="timeProgress" class="white rounded-xl" :color="progressColor" rounded
+                      :buffer-value="timeProgress" height="120px" stream>
+                      <div v-if="time === 60" class="d-flex align-center">
+                        <v-icon size="80" class="pr-8" color="white">mdi-clock-remove-outline</v-icon><span
+                          class="text-h1 font-weight-black yellow--text">TIMEOUT</span>
+                      </div>
+                    </v-progress-linear>
+
+                  </v-col>
+
+                  <v-col cols="1" class="d-flex align-center justify-center">
+                    <v-btn v-show="time === 60" icon large @click="roundDone()"><v-icon>mdi-close</v-icon></v-btn>
+                  </v-col>
+
+
+                </v-row>
+              </v-container>
+            </v-card>
+
+          </v-expand-transition>
+        </v-card>
+
+        <v-card width="100%" height="50%" flat class="transparent">
+          <v-container fluid fill-height>
+            <v-row align="center" justify="center">
+              <v-col v-for="(team, index) in info.teams" :key="index">
+                <v-card class="rounded-xl">
+                  <v-card-title @click="changeName(index)"
+                    :class="`d-flex justify-center text-h4 ${colors[index]||'grey'} lighten-2`">{{
+                    team.name }}</v-card-title>
+                  <v-card class="d-flex align-center justify-space-around">
+                    <v-btn icon large><v-icon color="grey lighten-2"
+                        @click="changeCount(index,-1)">mdi-minus</v-icon></v-btn>
+                    <span class="font-weight-black text"> {{team.count}}</span>
+                    <v-btn icon large><v-icon color="grey lighten-2"
+                        @click="changeCount(index,1)">mdi-plus</v-icon></v-btn>
+                  </v-card>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card>
+
+
+        <v-card width="100%" height="25%" flat class="transparent rounded-xl">
+          <v-container fluid fill-height>
+            <v-row align='center' justify='center'>
+              <v-col cols='2' class="d-flex justify-center">
+                <v-btn @click="startQuestion()" width="80%" height="90%" text
+                  class="blue darken-1 rounded-xl elevation-0">
+                  <v-icon size="128" color="blue">mdi-play</v-icon>
+                </v-btn>
+              </v-col>
+              <v-col cols='8' class="d-flex justify-center">
+                <span class="font-weight-black text-h1">
+                  <span v-if="round>0"><span class="white--text pr-8">ROUND</span><span class="yellow--text">{{ round
+                      }}</span></span>
+                </span>
+              </v-col>
+              <v-col cols='2' class="d-flex justify-center">
+                <v-btn @click="toggleFullscreen()" width="80%" height="90%" text
+                  class="blue darken-1 rounded-xl elevation-0">
+                  <v-icon size="128" color="blue">mdi-fullscreen</v-icon>
+                </v-btn>
+              </v-col>
+            </v-row>
+          </v-container>
+
+        </v-card>
+
+
+      </v-card>
+    </v-app>
+  </div>
+
+  <script>
+    const QUESTIONS_MODE = {
+      TEXT: "text",
+      TABLE: "table",
+    };
+
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      data() {
+        return {
+          info: {
+            teams: [],
+            gameName: 'The Game'
+          },
+          defaultTeamsCount: 5,
+          isPanelHidden: true,
+          time: 0,
+          timeCounter: null,
+          round: 0,
+          musicTick: '',
+          musicEnd: '',
+          isTimeShow: false,
+          colors: ['orange', 'green', 'blue', 'red', 'blue-grey', 'purple'],
+          //          isHovering: true,
+        };
+      },
+      computed: {
+        timeProgress() {
+          return this.time / 60 * 100
+        },
+        timeText() {
+          return 60 - this.time
+        },
+        progressColor() {
+          if (this.time < 30) return 'green';
+          if (this.time < 50) return 'orange';
+          if (this.time <= 60) return 'red';
+        }
+      },
+      mounted() {
+        const savedTeams = this.getObjectFromCookie();
+        if (savedTeams) {
+          this.info.teams = savedTeams
+        } else {
+          this.addTeam()
+          this.addTeam()
+          this.addTeam()
+          this.addTeam()
+          this.addTeam()
+        }
+      },
+      watch: {
+        time(newTime) {
+          if (newTime === 60) {
+            this.playAudioEnd();
+            clearInterval(this.timeCounter);
+            this.timeCounter = null;
+          }
+        },
+        teams(newTeams) {
+          this.saveObjectToCookie(newTeams)
+        }
+      },
+      methods: {
+        roundDone() {
+          this.isTimeShow = false;
+          this.time = 0;
+        },
+        toggleFullscreen() {
+          const isInFullscreen = document.fullscreenElement !== null;
+
+          if (isInFullscreen) {
+            this.exitFullscreen();
+          } else {
+            this.enterFullscreen();
+          }
+        },
+        enterFullscreen() {
+          const element = document.getElementById('screen');
+          if (element) {
+            if (element.requestFullscreen) {
+              element.requestFullscreen();
+            } else if (element.mozRequestFullScreen) {
+              element.mozRequestFullScreen();
+            } else if (element.webkitRequestFullscreen) {
+              element.webkitRequestFullscreen();
+            } else if (element.msRequestFullscreen) {
+              element.msRequestFullscreen();
+            }
+          }
+        },
+        exitFullscreen() {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+        },
+        changeName(index) {
+          const newName = prompt('Enter team name');
+          if (newName) this.info.teams.splice(index, 1, { ...this.info.teams[index], name: newName })
+        },
+        changeGameName() {
+          const newName = prompt('Enter game name');
+          if (newName) this.info.gameName = newName;
+        },
+        changeCount(index, count) {
+          const currentTeam = this.info.teams[index]
+          console.log(index, count, (count !== -1), (currentTeam.count !== 0));
+          if (count === -1 && currentTeam.count === 0) return;
+          const newCount = Number.isInteger(currentTeam.count) ? currentTeam.count + count : 0;
+          this.info.teams.splice(index, 1, { ...this.info.teams[index], count: newCount })
+        },
+        saveObjectToCookie(obj) {
+          const jsonString = JSON.stringify(obj);
+          document.cookie = `teams=${encodeURIComponent(jsonString)}; path=/`;
+        },
+        getObjectFromCookie() {
+          const cookieValue = document.cookie.replace(
+            /(?:(?:^|.*;\s*)teams\s*=\s*([^;]*).*$)|^.*$/,
+            '$1'
+          );
+
+          if (cookieValue) {
+            const decodedString = decodeURIComponent(cookieValue);
+            return JSON.parse(decodedString);
+          }
+
+          return null;
+        },
+        playAudioTick() {
+          const audioElement = this.$refs.musicTick;
+          audioElement.pause();
+          audioElement.currentTime = 0;
+          audioElement.play();
+        },
+        playAudioEnd() {
+          const audioElement = this.$refs.musicEnd;
+          audioElement.pause();
+          audioElement.currentTime = 0;
+          audioElement.play();
+        },
+        startQuestion() {
+          this.round++;
+          this.isTimeShow = true;
+          this.time = 0;
+          this.timeCounter = setInterval(() => {
+            this.time++;
+            this.playAudioTick()
+          }, 100)
+        },
+        addTeam() {
+          this.info.teams.push({ name: `New team ${this.info.teams.length + 1}`, count: 0 });
+        },
+      },
+    });
+  </script>
+  <style>
+    .text {
+      font-size: 160px;
+    }
+
+    @import url('https://fonts.googleapis.com/css?family=Exo:400,700');
+
+    * {
+      margin: 0px;
+      padding: 0px;
+    }
+
+    body {
+      font-family: 'Exo', sans-serif;
+    }
+
+
+    .context {
+      width: 100%;
+      position: absolute;
+      top: 50vh;
+
+    }
+
+    .context h1 {
+      text-align: center;
+      color: #fff;
+      font-size: 50px;
+    }
+
+
+    .area {
+      background: #4e54c8;
+      background: -webkit-linear-gradient(to left, #8f94fb, #4e54c8);
+      width: 100%;
+      height: 100vh;
+
+
+    }
+
+    .circles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .circles li {
+      position: absolute;
+      display: block;
+      list-style: none;
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      animation: animate 25s linear infinite;
+      bottom: -150px;
+
+    }
+
+    .circles li:nth-child(1) {
+      left: 25%;
+      width: 80px;
+      height: 80px;
+      animation-delay: 0s;
+    }
+
+
+    .circles li:nth-child(2) {
+      left: 10%;
+      width: 20px;
+      height: 20px;
+      animation-delay: 2s;
+      animation-duration: 12s;
+    }
+
+    .circles li:nth-child(3) {
+      left: 70%;
+      width: 20px;
+      height: 20px;
+      animation-delay: 4s;
+    }
+
+    .circles li:nth-child(4) {
+      left: 40%;
+      width: 60px;
+      height: 60px;
+      animation-delay: 0s;
+      animation-duration: 18s;
+    }
+
+    .circles li:nth-child(5) {
+      left: 65%;
+      width: 20px;
+      height: 20px;
+      animation-delay: 0s;
+    }
+
+    .circles li:nth-child(6) {
+      left: 75%;
+      width: 110px;
+      height: 110px;
+      animation-delay: 3s;
+    }
+
+    .circles li:nth-child(7) {
+      left: 35%;
+      width: 150px;
+      height: 150px;
+      animation-delay: 7s;
+    }
+
+    .circles li:nth-child(8) {
+      left: 50%;
+      width: 25px;
+      height: 25px;
+      animation-delay: 15s;
+      animation-duration: 45s;
+    }
+
+    .circles li:nth-child(9) {
+      left: 20%;
+      width: 15px;
+      height: 15px;
+      animation-delay: 2s;
+      animation-duration: 35s;
+    }
+
+    .circles li:nth-child(10) {
+      left: 85%;
+      width: 150px;
+      height: 150px;
+      animation-delay: 0s;
+      animation-duration: 11s;
+    }
+
+
+
+    @keyframes animate {
+
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+        border-radius: 0;
+      }
+
+      100% {
+        transform: translateY(-1200px) rotate(720deg);
+        opacity: 0;
+        border-radius: 50%;
+      }
+
+    }
+  </style>
+</body>
+
+</html>
